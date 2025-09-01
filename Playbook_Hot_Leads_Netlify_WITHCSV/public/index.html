@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Playbook & Academy — Hot Leads (Auto-Refreshed Daily)</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; margin: 2rem; }
+    h1 { margin: 0 0 0.5rem; }
+    .muted { color: #555; }
+    .toolbar { display:flex; gap: 1rem; align-items:center; margin: 1rem 0 2rem; flex-wrap:wrap; }
+    input[type="search"] { padding: 0.6rem 0.8rem; width: 320px; max-width: 90%; }
+    .card { border: 1px solid #eee; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
+    .card h3 { margin: 0 0 0.5rem; font-size: 1.05rem; }
+    .meta { font-size: 0.9rem; color:#666; }
+    .kw { display:inline-block; background:#f2f2f2; border-radius:4px; padding:2px 6px; margin-right:6px; font-size:0.8rem; }
+    .pill { display:inline-block; border:1px solid #ddd; padding:4px 8px; border-radius:16px; margin:2px; cursor:pointer; }
+    .pill.active { background:#111; color:#fff; }
+    .grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem; }
+    button { padding: 0.6rem 0.8rem; }
+  </style>
+</head>
+<body>
+  <h1>Playbook & Academy — Hot Leads</h1>
+  <div class="muted">Auto-refreshed daily via Netlify Scheduled Function · Keywords loaded from your list</div>
+
+  <div class="toolbar">
+    <input id="q" type="search" placeholder="Search titles & descriptions…" />
+    <button id="refresh">Refresh Now</button>
+    <span id="stamp" class="muted"></span>
+  </div>
+
+  <div id="keywords"></div>
+  <div id="results" class="grid"></div>
+
+<script>
+const KEYWORDS = ["High ticket sales training", "High ticket closer certification", "Women in sales coaching", "How to become a high ticket closer", "Sales confidence coaching for women", "High income remote careers", "High ticket sales frameworks", "Objection handling training", "Women empowerment sales program", "Best high ticket closing course", "High ticket coaching business model", "Remote sales jobs with training", "Sales authority frameworks", "Emotional ROI in sales", "Female high ticket closer success stories", "Sales funnel framework for closers", "AI-powered sales training", "Women\u2019s generational wealth building", "Career change into high ticket sales", "High ticket sales academy"];
+const endpoint = "/.netlify/functions/leads";
+
+const kwWrap = document.getElementById('keywords');
+const q = document.getElementById('q');
+const results = document.getElementById('results');
+const stamp = document.getElementById('stamp');
+const refreshBtn = document.getElementById('refresh');
+
+let data = null;
+let activeFilter = null;
+
+function kwPill(label) {
+  const el = document.createElement('span');
+  el.className = 'pill';
+  el.textContent = label;
+  el.onclick = () => {
+    activeFilter = (activeFilter === label) ? null : label;
+    Array.from(kwWrap.children).forEach(c => c.classList.toggle('active', c.textContent === activeFilter));
+    render();
+  };
+  return el;
+}
+
+KEYWORDS.forEach(k => kwWrap.appendChild(kwPill(k)));
+
+async function load() {
+  const res = await fetch(endpoint);
+  data = await res.json();
+  stamp.textContent = "Generated: " + new Date(data.generatedAt).toLocaleString();
+  render();
+}
+
+function render() {
+  if (!data) return;
+  const needle = (q.value || '').toLowerCase();
+  const filtered = data.leads.filter(item => {
+    const hay = (item.title + ' ' + (item.description || '') + ' ' + (item.source || '')).toLowerCase();
+    const kwMatch = activeFilter ? (item.matchedKeyword === activeFilter) : true;
+    const textMatch = needle ? hay.includes(needle) : true;
+    return kwMatch && textMatch;
+  });
+
+  results.innerHTML = '';
+  filtered.slice(0, 100).forEach(item => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
+      <h3><a href="${item.link}" target="_blank" rel="noopener noreferrer">${item.title}</a></h3>
+      <div class="meta">${item.source || ''} · ${item.pubDate ? new Date(item.pubDate).toLocaleString() : ''}</div>
+      <p>${item.description || ''}</p>
+      <div class="meta">Matched on: <span class="kw">${item.matchedKeyword}</span> · Score ${item.score}</div>
+    `;
+    results.appendChild(card);
+  });
+}
+
+q.addEventListener('input', render);
+refreshBtn.addEventListener('click', load);
+load();
+</script>
+</body>
+</html>

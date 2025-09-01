@@ -1,0 +1,14 @@
+{
+  "name": "playbook-and-academy-hot-leads",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "echo 'No build step needed'",
+    "dev": "netlify dev"
+  },
+  "dependencies": {
+    "fast-xml-parser": "^4.4.0",
+    "node-fetch": "^3.3.2"
+  }
+}
